@@ -1,0 +1,35 @@
+# Environment files
+.env
+backend/.env
+
+# Python cache/bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+.venv/
+backend/venv/
+
+# Build/test/tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local runtime outputs
+backend/outputs/
+
+# Local model/runtime config
+backend/model_config.json
+
+# Notebook checkpoints
+.ipynb_checkpoints/
+
+# Editor/OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

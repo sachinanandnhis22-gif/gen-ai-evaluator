@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Transformer</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/model-config.css">
+    <style>
+        /* Modal Styles */
+        #modelConfigModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            /* Full screen white background like a separate page */
+            z-index: 1000;
+            overflow-y: auto;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header-controls">
+            <button type="button" class="back-btn" onclick="goHome()"
+                style="position: absolute; left: 0; background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease;">
+                ← Home
+            </button>
+            <h1>Prompt Transformer</h1>
+            <div class="header-buttons">
+                <button type="button" class="current-model-btn" id="currentModelBtn"
+                    title="Current Model Configuration">
+                    Loading...
+                </button>
+                <button type="button" class="settings-btn" onclick="goToModelConfig()"
+                    title="Change AI Model and Reasoning Parameters">
+                    Add Model
+                </button>
+            </div>
+        </div>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-section">
+                <h2>File Upload</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="excelFile">Input Excel File:</label>
+                        <input type="file" id="excelFile" name="excelFile" accept=".xlsx,.xls" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="schemaFile">Schema File:</label>
+                        <input type="file" id="schemaFile" name="schemaFile" accept=".json" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Processing Options</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="rowOption">Row Selection:</label>
+                        <select id="rowOption" name="rowOption">
+                            <option value="all">All Rows</option>
+                            <option value="number">Number of Rows</option>
+                            <option value="range">Range of Rows</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="numStatics">Static Content Sections:</label>
+                        <select id="numStatics" name="numStatics">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" id="numRowsGroup" style="display: none;">
+                        <label for="numRows">Number of Rows:</label>
+                        <input type="number" id="numRows" name="numRows" min="1">
+                    </div>
+                    <div class="form-group" id="rangeGroup" style="display: none;">
+                        <label for="startRow">Start Row:</label>
+                        <input type="number" id="startRow" name="startRow" min="0">
+                        <label for="endRow">End Row:</label>
+                        <input type="number" id="endRow" name="endRow" min="1">
+                    </div>
+                </div>
+            </div>
+
+            <div id="staticInputs">
+                <!-- Dynamic inputs will be added here -->
+            </div>
+
+            <div class="form-section">
+                <button type="submit" id="submitBtn">Process Files</button>
+            </div>
+        </form>
+
+        <div id="loading" style="display: none;">
+            <p>Processing... Please wait.</p>
+        </div>
+
+        <div id="results" style="display: none;">
+            <!-- Results will be displayed here -->
+        </div>
+    </div>
+
+    <!-- Model Config Modal -->
+    <div id="modelConfigModal">
+        <div class="container">
+            <div class="model-config-container">
+                <div class="header">
+                    <button class="back-btn" onclick="closeModelConfig()">← Back</button>
+                    <h1>Model Configuration</h1>
+                    <div class="header-spacer"></div>
+                </div>
+
+                <div class="config-content">
+                    <!-- Selected Models Section -->
+                    <div class="config-section" id="selectedModelsSection">
+                        <div class="section-header">
+                            <h2>Selected Models:</h2>
+                        </div>
+                        <div class="selected-models-list">
+                            <div id="selectedModelsList" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                <!-- Selected models will be injected here as chips -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Model Selection Section -->
+                    <div class="config-section">
+                        <div class="section-header">
+                            <h2>Select AI Model</h2>
+                            <p class="section-description">Choose the OpenAI model for processing your prompts</p>
+                        </div>
+
+                        <div class="model-categories">
+                            <!-- O Series -->
+                            <div class="model-category">
+                                <h3>O Series (Advanced Reasoning)</h3>
+                                <div class="model-grid">
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="o3" class="model-radio">
+                                        <span class="model-name">o3</span>
+                                        <span class="model-reasoning">Low, Medium, High, XHigh</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="o4-mini" class="model-radio">
+                                        <span class="model-name">o4-mini</span>
+                                        <span class="model-reasoning">Low, Medium, High</span>
+                                    </label>
+                                </div>
+                                <div class="category-reasoning-container"></div>
+                            </div>
+
+                            <!-- GPT-5 Series -->
+                            <div class="model-category">
+                                <h3>GPT-5 Series (Latest)</h3>
+                                <div class="model-grid">
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-5.2" class="model-radio">
+                                        <span class="model-name">GPT-5.2</span>
+                                        <span class="model-reasoning">Low, Medium, High</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-5.2-pro" class="model-radio">
+                                        <span class="model-name">GPT-5.2-pro</span>
+                                        <span class="model-reasoning">Medium, High, XHigh</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-5.2-codex" class="model-radio">
+                                        <span class="model-name">GPT-5.2-Codex</span>
+                                        <span class="model-reasoning">Low, Medium, High, XHigh</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-5.1" class="model-radio">
+                                        <span class="model-name">GPT-5.1</span>
+                                        <span class="model-reasoning">Low, Medium, High</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-5.1-codex" class="model-radio">
+                                        <span class="model-name">GPT-5.1-Codex</span>
+                                        <span class="model-reasoning">Low, Medium, High</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-5" class="model-radio">
+                                        <span class="model-name">GPT-5</span>
+                                        <span class="model-reasoning">Medium, High</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-5-mini" class="model-radio">
+                                        <span class="model-name">GPT-5 mini</span>
+                                        <span class="model-reasoning">Low, Medium</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-5-nano" class="model-radio">
+                                        <span class="model-name">GPT-5 nano</span>
+                                        <span class="model-reasoning">Low</span>
+                                    </label>
+                                </div>
+                                <div class="category-reasoning-container"></div>
+                            </div>
+
+                            <!-- GPT-4 Series -->
+                            <div class="model-category">
+                                <h3>GPT-4 Series (Prompt-Only)</h3>
+                                <div class="model-grid">
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-4.1" class="model-radio">
+                                        <span class="model-name">GPT-4.1</span>
+                                        <span class="model-reasoning prompt-only">Prompt-Only</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-4.1-mini" class="model-radio">
+                                        <span class="model-name">GPT-4.1 mini</span>
+                                        <span class="model-reasoning prompt-only">Prompt-Only</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-4.1-nano" class="model-radio">
+                                        <span class="model-name">GPT-4.1 nano</span>
+                                        <span class="model-reasoning prompt-only">Prompt-Only</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-4o" class="model-radio">
+                                        <span class="model-name">GPT-4o</span>
+                                        <span class="model-reasoning prompt-only">Prompt-Only</span>
+                                    </label>
+                                    <label class="model-option">
+                                        <input type="radio" name="model" value="gpt-4o-mini" class="model-radio">
+                                        <span class="model-name">GPT-4o mini</span>
+                                        <span class="model-reasoning prompt-only">Prompt-Only</span>
+                                    </label>
+                                </div>
+                                <div class="category-reasoning-container"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Model Button -->
+                    <div class="action-buttons" style="justify-content: space-between; margin-bottom: 30px;">
+                        <button class="btn btn-save" id="addModelBtn" disabled>+ Add Selected
+                            Model</button>
+                        <button class="btn btn-cancel" id="clearSelectionBtn">Clear Selection</button>
+                    </div>
+
+                    <!-- Final Action Buttons -->
+                    <div class="action-buttons">
+                        <button class="btn btn-cancel" onclick="closeModelConfig()">Cancel</button>
+                        <button class="btn btn-save" id="saveBtn" onclick="saveConfiguration()">Final Save
+                            Configuration</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js?v=4"></script>
+    <script src="/static/model-config.js?v=4"></script>
+</body>
+
+</html>

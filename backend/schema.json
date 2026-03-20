@@ -1,0 +1,28 @@
+{
+    "title": "CandidateScoreResponse",
+    "description": "Structure for candidate scoring.",
+    "type": "object",
+    "properties": {
+        "score_explanation": {
+            "type": "string",
+            "description": "Insights about the candidate to assess the candidate's fit.  Should be in markdown format, be well structured, look professional, and be easy to read.  HR will review this to take a call on whether to screen the candidate or not."
+        },
+        "category": {
+            "type": "string",
+            "description": "The category (A/B/C/D) the candidate falls into"
+        },
+        "subcategory": {
+            "type": "integer",
+            "description": "The subcategory (1-8) the candidate falls into"
+        },
+        "summary": {
+            "type": "string",
+            "description": "10-15 word summary of score_explanation"
+        }
+    },
+    "required": [
+        "score_explanation",
+        "category",
+        "subcategory"
+    ]
+}
