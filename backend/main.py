@@ -594,7 +594,7 @@ def apply_formatting_to_field(
 
 @app.get("/")
 def get_home():
-    return FileResponse(frontend_dir / "home.html", media_type="text/html")
+    return FileResponse(frontend_dir / "index.html", media_type="text/html")
 
 @app.get("/index.html")
 def get_index():
@@ -603,10 +603,6 @@ def get_index():
 @app.get("/model-config.html")
 def get_model_config_page():
     return FileResponse(frontend_dir / "model-config.html", media_type="text/html")
-
-@app.get("/model-compare.html")
-def get_model_compare_page():
-    return FileResponse(frontend_dir / "model-compare.html", media_type="text/html")
 
 @app.get("/outputs/{filename}")
 def download_output(filename: str):
@@ -900,56 +896,6 @@ async def save_model_config(request: Request):
 @app.get("/api/get-model-config")
 async def get_model_config():
     return {"config": model_config}
-
-
-# ---------------------------------------------------------------------------
-# Routes – model comparison
-# ---------------------------------------------------------------------------
-
-@app.post("/api/compare-models")
-async def compare_models(request: Request):
-    if not OPENAI_API_KEY:
-        raise HTTPException(500, "OPENAI_API_KEY not configured")
-
-    data    = await request.json()
-    prompt  = data.get("prompt")
-    schema  = data.get("schema")
-    models  = data.get("models", {})
-
-    if not prompt:
-        raise HTTPException(400, "Prompt is required")
-    if not schema:
-        raise HTTPException(400, "Schema is required")
-    if not models:
-        raise HTTPException(400, "At least one model must be selected")
-
-    # Normalise input: accept dict {model: reasoning} OR list [{model, reasoning}]
-    if isinstance(models, dict):
-        model_items = list(models.items())
-    elif isinstance(models, list):
-        model_items = [(e["model"], e.get("reasoning")) for e in models if isinstance(e, dict) and "model" in e]
-    else:
-        raise HTTPException(400, "Invalid models payload")
-
-    results = []
-    for model_name, reasoning_level in model_items:
-        try:
-            res = await run_openai(prompt, schema, model_name, reasoning_level)
-            results.append({
-                "model":     model_name,
-                "reasoning": reasoning_level,
-                "response":  res["content"],
-                "error":     None,
-            })
-        except Exception as exc:
-            results.append({
-                "model":     model_name,
-                "reasoning": reasoning_level,
-                "response":  None,
-                "error":     str(exc),
-            })
-
-    return {"status": "completed", "prompt": prompt, "results": results}
 
 
 # ---------------------------------------------------------------------------
