@@ -158,10 +158,6 @@ function restoreFormDataFromSession() {
 // NAVIGATION & MODAL
 // ============================================================
 
-function goHome() {
-  window.location.href = '/';
-}
-
 function goToModelConfig() {
   $('modelConfigModal').style.display = 'block';
   if (typeof loadSavedConfiguration === 'function') {
